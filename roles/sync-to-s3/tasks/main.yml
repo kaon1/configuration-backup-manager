@@ -1,0 +1,21 @@
+---
+- name:
+  block:
+    - name: Sync to S3
+      community.aws.s3_sync:
+        bucket: <bucket_name>
+        key_prefix: config-backups
+        file_root: /root/configuration-backup-manager/config-backups/
+      register: result_s3
+
+    - name: Add status to s3 state file
+      ansible.builtin.lineinfile:
+        path: templates/failed_s3.txt
+        line: "S3 SYNC SUCCESSFUL"
+      when: result_s3 is defined
+
+  rescue:
+    - name: Add error state to file
+      ansible.builtin.lineinfile:
+        path: templates/failed_s3.txt
+        line: "ERROR S3 SYNC FAILED"

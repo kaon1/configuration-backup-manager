@@ -1,0 +1,10 @@
+---
+collections:
+  - name: junipernetworks.junos
+    source: https://galaxy.ansible.com
+    version: 2.3.0
+  - name: juniper.device
+    source: https://galaxy.ansible.com
+  - name: fortinet.fortios
+    version: 2.1.2
+    source: https://galaxy.ansible.com

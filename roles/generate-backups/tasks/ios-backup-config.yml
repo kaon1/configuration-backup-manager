@@ -1,0 +1,29 @@
+---
+- name: IOS CISCO
+  block:
+    - name: Backup IOS Device
+      vars:
+        ansible_user: "username"
+        ansible_password: pwd
+      ios_config:
+         backup: yes
+         backup_options:
+           filename: "{{ net_backup_filename }}"
+           dir_path: "{{ network_backup_dir }}"
+      register: backupinfo
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: backupinfo is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

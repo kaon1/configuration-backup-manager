@@ -1,0 +1,38 @@
+---
+- name: FORTIOS
+  block:
+    - name: Backup Fortigate Device
+      vars:
+        ansible_httpapi_use_ssl: yes
+        ansible_httpapi_validate_certs: no
+        ansible_httpapi_port: 443
+        ansible_user: "username"
+        ansible_password: pwd
+#        ansible_connection: httpapi
+      fortinet.fortios.fortios_monitor_fact:
+         selector: 'system_config_backup'
+         vdom: 'root'
+         params:
+             scope: 'global'
+      register: backupinfo
+
+    - name: Save the backup information.
+      copy:
+         content: '{{ backupinfo.meta.raw }}'
+         dest: "{{ network_backup_dir }}/{{ net_backup_filename }}"
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: backupinfo is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

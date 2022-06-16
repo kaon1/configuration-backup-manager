@@ -1,0 +1,114 @@
+---
+- name: "PLAY TO BACKUP NETWORK CONFIGURATIONS"
+  hosts: "{{ var_hosts }}"
+  roles:
+    - role: arubanetworks.aos_wlan_role
+  vars:
+    network_backup_dir: "/root/configuration-backup-manager/config-backups/"
+    net_backup_filename: "{{ inventory_hostname }}-{{ ansible_host }}-config.txt"
+  tasks:
+    - name: delete exisiting successful_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        state: absent
+      run_once: True
+      delegate_to: localhost
+
+    - name: delete exisiting failed_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        state: absent
+      run_once: True
+      delegate_to: localhost
+
+    - name: delete total_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/total_hosts.txt
+        state: absent
+      run_once: True
+      delegate_to: localhost
+
+    - name: create successful_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        state: touch
+      run_once: True
+      delegate_to: localhost
+
+    - name: create failed_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        state: touch
+      run_once: True
+      delegate_to: localhost
+
+    - name: create total_hosts file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/total_hosts.txt
+        state: touch
+      run_once: True
+      delegate_to: localhost
+
+    - name: update total_hosts file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/total_hosts.txt
+        line: "{{ groups['all'] | length }}"
+      run_once: True
+      delegate_to: localhost
+
+    - include_role:
+        name: generate-backups
+
+- name: "SYNC NETWORK CONFIGURATIONS TO S3 BUCKET"
+  hosts: localhost
+  vars:
+    network_backup_dir: "/root/configuration-backup-manager/config-backups/"
+    net_backup_filename: "{{ inventory_hostname }}-{{ ansible_host }}-config.txt"
+  tasks:
+    - name: delete exisiting s3_sync file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/failed_s3.txt
+        state: absent
+      run_once: True
+
+    - name: create s3_sync file
+      ansible.builtin.file:
+        path: /root/configuration-backup-manager/templates/failed_s3.txt
+        state: touch
+      run_once: True
+
+    - include_role:
+        name: sync-to-s3
+
+- name: "Build Email Template"
+  hosts: localhost
+  tasks:
+    - name: "lookup file successful_hosts.txt"
+      set_fact:
+        success_data: "{{ lookup('file', '/root/configuration-backup-manager/templates/successful_hosts.txt').splitlines() }}"
+
+    - name: "lookup file failed_hosts.txt"
+      set_fact:
+        failed_data: "{{ lookup('file', '/root/configuration-backup-manager/templates/failed_hosts.txt').splitlines() }}"
+
+    - name: "lookup file total_hosts.txt"
+      set_fact:
+        total_data: "{{ lookup('file', '/root/configuration-backup-manager/templates/total_hosts.txt') }}"
+
+    - name: "lookup file failed_s3.txt"
+      set_fact:
+        s3_error: "{{ lookup('file', '/root/configuration-backup-manager/templates/failed_s3.txt').splitlines() }}"
+
+    - name: Generate Backup State File
+      template:
+        src: "/root/configuration-backup-manager/templates/backup_state.j2"
+        dest: "/root/configuration-backup-manager/templates/backup_state.txt"
+
+    - name: send email
+      mail:
+        host: localhost
+        port: 25
+        sender: '<email>'
+        to: '<email>'
+        subject: 'Ansible NCM Job Completion'
+        body: "{{ lookup('file', '/root/configuration-backup-manager/templates/backup_state.txt')}}"

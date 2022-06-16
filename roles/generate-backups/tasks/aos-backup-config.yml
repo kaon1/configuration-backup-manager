@@ -1,0 +1,35 @@
+---
+- name: ARUBA
+  block:
+    - name: grab and download aruba config
+      vars:
+        ansible_httpapi_port: 4343
+        ansible_httpapi_validate_certs: False
+        ansible_httpapi_use_ssl: True
+        ansible_user: username
+        ansible_password: pwd
+      aos_show_command:
+        command: show running-config
+      register: aos_output
+
+    - name: Save the backup information.
+      copy:
+        content: '{{ aos_output.msg._data[0] }}'
+        dest: "{{ network_backup_dir }}/{{ net_backup_filename }}"
+      delegate_to: localhost
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: aos_output is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

@@ -1,0 +1,33 @@
+---
+- name: CITRIX NETSCALER
+  block:
+    - name: grab and download citrix config
+      vars:
+        ansible_user: <un>
+        ansible_password: <pwd>
+        ansible_network_os: vyos
+      cli_command:
+        command: show ns runningConfig
+      register: citrix_output
+
+    - name: Save the backup information.
+      copy:
+        content: '{{ citrix_output.stdout_lines | to_nice_json }}'
+        dest: "{{ network_backup_dir }}/{{ net_backup_filename }}"
+      delegate_to: localhost
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: citrix_output is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

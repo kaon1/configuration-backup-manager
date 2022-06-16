@@ -1,0 +1,32 @@
+---
+- name: OPENGEAR
+  block:
+    - name: grab and download opengear config
+      vars:
+        ansible_port: 22
+        ansible_user: un
+        ansible_password: pwd
+      raw: config -g config
+      register: output_opengear_config
+
+    - name: Save the backup information.
+      copy:
+        content: '{{ output_opengear_config.stdout_lines | to_nice_json }}'
+        dest: "{{ network_backup_dir }}/{{ net_backup_filename }}"
+      delegate_to: localhost
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: output_opengear_config
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

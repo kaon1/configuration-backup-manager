@@ -1,0 +1,37 @@
+---
+- name: F5 BIG-IP
+  block:
+    - name: grab and download big-ip config
+      bigip_command:
+        commands:
+          - show running-config
+        provider:
+          server: "{{ ansible_host }}"
+          password: pwd
+          user: un
+          validate_certs: no
+          transport:  cli
+      register: bigip_result
+      delegate_to: localhost
+
+    - name: Save the backup information.
+      copy:
+        content: '{{ bigip_result.stdout_lines | to_nice_json }}'
+        dest: "{{ network_backup_dir }}/{{ net_backup_filename }}"
+      delegate_to: localhost
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: bigip_result is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1

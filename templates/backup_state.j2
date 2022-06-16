@@ -1,0 +1,38 @@
+Ansible Configuration Backup Manager
+
+Date: "{{ lookup('pipe','date') }}"
+
+Errored Backups: {{ failed_data | length }}
+
+Successful Backups: {{ success_data | length }}
+
+Total Devices Tagged for Backup: {{ total_data }}
+
+S3 Sync Status: {{ s3_error }}
+___________________________________________________________________________
+Location of All Backups can be found on AWS S3:
+s3://<bucket-name>/config-backups/
+
+List of Devices Tagged for Nightly Backup:
+https://<netbox-url>/dcim/devices/?tag=ncm_backup
+
+Execution Server Location:
+ssh://<server>
+Directory: /root/configuration-backup-manager/ncm-engine.yml
+
+GitHub Repo:
+https://github.com/<repo>
+
+PRTG Sensor Of Backup State:
+https://<url>/sensor.htm?id=...
+
+Documentation:
+https://<url>
+___________________________________________________________________________
+Failed Device Names:
+{# new line #}
+{{ failed_data | to_nice_yaml(indent=2) }}
+
+Successful Device Names:
+{# new line #}
+{{ success_data | to_nice_yaml(indent=2) }}

@@ -1,0 +1,12 @@
+---
+plugin: netbox.netbox.nb_inventory
+api_endpoint: "<netbox-url>"
+token: token
+validate_certs: false
+config_context: false
+compose:
+ ansible_network_os: platform.slug
+ ansible_connection: custom_fields.ansible_connection
+device_query_filters:
+  - status: 'active'
+  - tag: 'ncm_backup'
