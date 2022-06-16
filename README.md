@@ -1,5 +1,5 @@
 # Configuration Backup Manager
-## Backup configs of all networking devices
+## Backup configs of many network vendors
 
 ## Features
 
