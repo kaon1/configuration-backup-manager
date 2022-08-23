@@ -13,6 +13,7 @@
   - Junos
   - Citrix Netscaler
   - Big-IP F5
+  - Arista EOS
 
 ## Execution Flow
 ![ansible-network-config-backups-workflow](https://user-images.githubusercontent.com/29799963/184521753-551d56ae-fbc4-49ac-8d2a-ff67c662e41f.png)
