@@ -1,0 +1,33 @@
+---
+- name: ARISTA EOS
+  block:
+    - name: grab and download ARISTA config
+      vars:
+        ansible_httpapi_port: 443
+        ansible_httpapi_validate_certs: False
+        ansible_httpapi_use_ssl: True
+        ansible_become: True
+        ansible_user: username
+        ansible_password: pwd
+      arista.eos.eos_config:
+        backup: yes
+        backup_options:
+           filename: "{{ net_backup_filename }}"
+           dir_path: "{{ network_backup_dir }}"
+      register: arista_backupinfo
+
+    - name: Add SUCCESS line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/successful_hosts.txt
+        line: "{{ inventory_hostname }}"
+      when: arista_backupinfo is defined
+      delegate_to: localhost
+      throttle: 1
+
+  rescue:
+    - name: Add ERROR line to file
+      ansible.builtin.lineinfile:
+        path: /root/configuration-backup-manager/templates/failed_hosts.txt
+        line: "{{ inventory_hostname }}"
+      delegate_to: localhost
+      throttle: 1
